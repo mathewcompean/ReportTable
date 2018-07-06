@@ -6,8 +6,9 @@ import { Table, Input, Button, Icon } from 'antd';
 
 class ReportTable extends React.Component {
 
-  ReportTable(data){
-    this.data = data;
+  ReportTable(tableData){
+    this.data = tableData;
+    this.setState({data:this.data});
   }
 
   data = ( function() {
@@ -47,7 +48,7 @@ class ReportTable extends React.Component {
         completionDate1: '2014-12-24 23:12:00',
         jobType: 'Localization',
         dueDate: '2014-12-30 23:12:00',
-        assets: 'Some Assets',
+        assets: 'Other Assets',
         workabilityDate: '2014-12-19 23:12:00',
         startDate2: '2014-12-20 23:12:00',
         completionDate2: '2014-12-22 23:12:00',
@@ -55,8 +56,8 @@ class ReportTable extends React.Component {
         pxlManager: 'Test PXL Manager',
         clientManager: 'Test Client Manager',
         clientGroup: 'Test Client Group',
-        pxlNotes: 'Some PLM notes',
-        clientNotes: 'Some Client notes',
+        pxlNotes: 'Other PLM notes',
+        clientNotes: 'Other Client notes',
         jobID: "22222",
         batchID: "002211",
         poNum: "120732073290"
@@ -68,11 +69,18 @@ class ReportTable extends React.Component {
   state = {
     filteredInfo: null,
     sortedInfo: null,
-    filterDropdownVisible: false,
+    filterDropdownJobsVisible: false,
+    filterDropdownAssetsVisible: false,
+    filterDropdownPxlNotesVisible: false,
+    filterDropdownClientNotesVisible: false,
     data: this.data,
     searchText: '',
     filtered: false
   };
+
+  updateData(newData){
+    this.setState({data: newData});
+  }
 
   onInputChange = (e) => {
     this.setState({ searchText: e.target.value });
@@ -144,6 +152,84 @@ class ReportTable extends React.Component {
       }).filter(record => !!record),
     });
   }
+
+  onSearchAssets = () => {
+    const { searchText } = this.state;
+    const reg = new RegExp(searchText, 'gi');
+    this.setState({
+      filterDropdownVisible: false,
+      filtered: !!searchText,
+      data: this.data.map((record) => {
+        const match = record.assets.match(reg);
+        if (!match) {
+          return null;
+        }
+        return {
+          ...record,
+          assets: (
+            <span>
+              {record.assets.split(new RegExp(`(?=${searchText})`, "ig")).map((text, i) => (
+                text.toLowerCase() === searchText.toLowerCase()
+                  ? <span key={i} className="highlight">{text}</span> : text // eslint-disable-line
+              ))}
+            </span>
+          ),
+        }; 
+      }).filter(record => !!record),
+    });
+  }
+
+  onSearchPxlNotes = () => {
+    const { searchText } = this.state;
+    const reg = new RegExp(searchText, 'gi');
+    this.setState({
+      filterDropdownVisible: false,
+      filtered: !!searchText,
+      data: this.data.map((record) => {
+        const match = record.pxlNotes.match(reg);
+        if (!match) {
+          return null;
+        }
+        return {
+          ...record,
+          pxlNotes: (
+            <span>
+              {record.pxlNotes.split(new RegExp(`(?=${searchText})`, "ig")).map((text, i) => (
+                text.toLowerCase() === searchText.toLowerCase()
+                  ? <span key={i} className="highlight">{text}</span> : text // eslint-disable-line
+              ))}
+            </span>
+          ),
+        }; 
+      }).filter(record => !!record),
+    });
+  }
+
+  onSearchClientNotes = () => {
+    const { searchText } = this.state;
+    const reg = new RegExp(searchText, 'gi');
+    this.setState({
+      filterDropdownVisible: false,
+      filtered: !!searchText,
+      data: this.data.map((record) => {
+        const match = record.clientNotes.match(reg);
+        if (!match) {
+          return null;
+        }
+        return {
+          ...record,
+          clientNotes: (
+            <span>
+              {record.clientNotes.split(new RegExp(`(?=${searchText})`, "ig")).map((text, i) => (
+                text.toLowerCase() === searchText.toLowerCase()
+                  ? <span key={i} className="highlight">{text}</span> : text // eslint-disable-line
+              ))}
+            </span>
+          ),
+        }; 
+      }).filter(record => !!record),
+    });
+  }
   
   render() {
     var titleFilterList = this.createUniqueFilterList("title");
@@ -185,7 +271,7 @@ class ReportTable extends React.Component {
         width: 120 },
       { title: 'Jop Type', dataIndex:'jobType', key: 'jobType',
         filterDropdown: (
-          <div className="filter-dropdown">
+          <div className="filter-dropdown-jobs">
             <Input
               ref={ele => this.searchInput = ele}
               placeholder="Search Job Type"
@@ -197,20 +283,40 @@ class ReportTable extends React.Component {
           </div>
         ),
         filterIcon: <Icon type="smile-o" style={{ color: this.state.filtered ? '#108ee9' : '#aaa' }} />,
-        filterDropdownVisible: this.state.filterDropdownVisible,
+        filterDropdownJobsVisible: this.state.filterDropdownJobsVisible,
         onFilterDropdownVisibleChange: (visible) => {
           this.setState({
-            filterDropdownVisible: visible,
+            filterDropdownJobsVisible: visible,
           }, () => this.searchInput && this.searchInput.focus());
         },
       width: 120},
       { title: 'Due Date (Actual)', dataIndex: 'dueDate', key: 'dueDate', 
         sorter: (a, b) => a.dueDate.length - b.dueDate.length,
         width: 120 },
-      { title: 'Assets', dataIndex: 'assets', key: 'assets', width: 120},
+      { title: 'Assets', dataIndex: 'assets', key: 'assets', 
+        filterDropdown: (
+          <div className="filter-dropdown-assets">
+            <Input
+              ref={ele => this.searchInput = ele}
+              placeholder="Search Assets"
+              value={this.state.searchText}
+              onChange={this.onInputChange}
+              onPressEnter={this.onSearchAssets}
+            />
+            <Button type="primary" onClick={this.onSearchAssets}>Search</Button>
+          </div>
+        ),
+        filterIcon: <Icon type="smile-o" style={{ color: this.state.filtered ? '#108ee9' : '#aaa' }} />,
+        filterDropdownAssetsVisible: this.state.filterDropdownAssetsVisible,
+        onFilterDropdownVisibleChange: (visible) => {
+          this.setState({
+            filterDropdownAssetsVisible: visible,
+          }, () => this.searchInput && this.searchInput.focus());
+        },
+        width: 120},
       { title: 'Workability Date (Target)', dataIndex: 'workabilityDate', key: 'workabilityDate', 
         sorter: (a, b) => a.workabilityDate.length - b.workabilityDate.length,
-        width: 120 },
+        width: 140 },
       { title: 'Start Date', dataIndex: 'startDate2', key: 'startDate2', 
         sorter: (a, b) => a.startDate2.length - b.startDate2.length,
         width: 120 },
@@ -233,8 +339,48 @@ class ReportTable extends React.Component {
         filters: clientGroupFilterList,
         onFilter: (value, record) => record.clientGroup.indexOf(value) === 0,
         width: 120 },
-      { title: 'Pixelogic Notes', dataIndex: 'pxlNotes', key: 'pxlNotes', width: 120 },
-      { title: 'Client Notes', dataIndex: 'clientNotes', key: 'clientNotes', width: 120 },
+      { title: 'Pixelogic Notes', dataIndex: 'pxlNotes', key: 'pxlNotes', 
+        filterDropdown: (
+          <div className="filter-dropdown-pxlnotes">
+            <Input
+              ref={ele => this.searchInput = ele}
+              placeholder="Search Pixelogic Notes"
+              value={this.state.searchText}
+              onChange={this.onInputChange}
+              onPressEnter={this.onSearchPxlNotes}
+            />
+            <Button type="primary" onClick={this.onSearchPxlNotes}>Search</Button>
+          </div>
+        ),
+        filterIcon: <Icon type="smile-o" style={{ color: this.state.filtered ? '#108ee9' : '#aaa' }} />,
+        filterDropdownPxlNotesVisible: this.state.filterDropdownPxlNotesVisible,
+        onFilterDropdownVisibleChange: (visible) => {
+          this.setState({
+            filterDropdownPxlNotesVisible: visible,
+          }, () => this.searchInput && this.searchInput.focus());
+        },
+        width: 120 },
+      { title: 'Client Notes', dataIndex: 'clientNotes', key: 'clientNotes', 
+        filterDropdown: (
+          <div className="filter-dropdown-clientnotes">
+            <Input
+              ref={ele => this.searchInput = ele}
+              placeholder="Search Client Notes"
+              value={this.state.searchText}
+              onChange={this.onInputChange}
+              onPressEnter={this.onSearchClientNotes}
+            />
+            <Button type="primary" onClick={this.onSearchClientNotes}>Search</Button>
+          </div>
+        ),
+        filterIcon: <Icon type="smile-o" style={{ color: this.state.filtered ? '#108ee9' : '#aaa' }} />,
+        filterDropdownClientNotesVisible: this.state.filterDropdownClientNotesVisible,
+        onFilterDropdownVisibleChange: (visible) => {
+          this.setState({
+            filterDropdownClientNotesVisible: visible,
+          }, () => this.searchInput && this.searchInput.focus());
+        },
+        width: 120 },
       { title: 'Job ID', dataIndex: 'jobID', key: 'jobID', 
         filters: jobIDFilterList,
         onFilter: (value, record) => record.jobID.indexOf(value) === 0,
@@ -257,7 +403,6 @@ class ReportTable extends React.Component {
         onChange={this.handleChange} 
         scroll={{x: 4200, y:1000}}
         />
-
     );
   }
 }
