@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import 'antd/dist/antd.css';
 import './index.css';
-import { Table } from 'antd';
+import { Table, Input, Button, Icon } from 'antd';
 
 class ReportTable extends React.Component {
 
@@ -10,53 +10,10 @@ class ReportTable extends React.Component {
     this.data = data;
   }
 
-  data = [];
-
-  state = {
-    filteredInfo: null,
-    sortedInfo: null,
-  };
-  handleChange = (pagination, filters, sorter) => {
-    console.log('parameters', pagination, filters, sorter);
-  }
-  clearFilters = () => {
-    this.setState({ filteredInfo: null });
-  }
-  clearAll = () => {
-    this.setState({
-      filteredInfo: null,
-      sortedInfo: null,
-    });
-  }
-  setAgeSort = () => {
-    this.setState({
-      sortedInfo: {
-        order: 'descend',
-        columnKey: 'age',
-      },
-    });
-  }
-
-  createUniqueFilterList(property){
-    var list = [];
-    var values = [];
-
-    for(var i = 0; i < this.data.length; i++){
-      var record = this.data[i];
-      var prop = record[property];
-
-      if(!values.includes(prop)){
-        list.push({text: prop, value: prop});
-        values.push(prop);
-      }
-    }
-
-    return list;
-  }
-  
-  render() {
+  data = ( function() {
+    var tData = [];
     for (let i = 0; i < 4; ++i) {
-      this.data.push({
+      tData.push({
         key: i,
         title: 'A - Test Title',
         alpha: '12345',
@@ -80,7 +37,7 @@ class ReportTable extends React.Component {
         batchID: "002211",
         poNum: "120732073290"
       });
-      this.data.push({
+      tData.push({
         key: i + 20,
         title: 'B - Test Title',
         alpha: '78901',
@@ -88,7 +45,7 @@ class ReportTable extends React.Component {
         lineOfService: 'Business',
         startDate1: '2014-12-20 23:12:00',
         completionDate1: '2014-12-24 23:12:00',
-        jobType: 'Encoding',
+        jobType: 'Localization',
         dueDate: '2014-12-30 23:12:00',
         assets: 'Some Assets',
         workabilityDate: '2014-12-19 23:12:00',
@@ -105,7 +62,90 @@ class ReportTable extends React.Component {
         poNum: "120732073290"
       });
     }
+    return tData;
+  })();
 
+  state = {
+    filteredInfo: null,
+    sortedInfo: null,
+    filterDropdownVisible: false,
+    data: this.data,
+    searchText: '',
+    filtered: false
+  };
+
+  onInputChange = (e) => {
+    this.setState({ searchText: e.target.value });
+  }
+
+  handleChange = (pagination, filters, sorter) => {
+    console.log('parameters', pagination, filters, sorter);
+  }
+
+  clearFilters = () => {
+    this.setState({ filteredInfo: null });
+  }
+
+  clearAll = () => {
+    this.setState({
+      filteredInfo: null,
+      sortedInfo: null,
+    });
+  }
+
+  setTitleSort = () => {
+    this.setState({
+      sortedInfo: {
+        order: 'descend',
+        columnKey: 'title',
+      },
+    });
+  }
+
+  createUniqueFilterList(property){
+    var list = [];
+    var values = [];
+
+    for(var i = 0; i < this.data.length; i++){
+      var record = this.data[i];
+      var prop = record[property];
+
+      if(!values.includes(prop)){
+        list.push({text: prop, value: prop});
+        values.push(prop);
+      }
+    }
+
+    return list;
+  }
+
+  onSearchJobType = () => {
+    const { searchText } = this.state;
+    const reg = new RegExp(searchText, 'gi');
+    this.setState({
+      filterDropdownVisible: false,
+      filtered: !!searchText,
+      data: this.data.map((record) => {
+        const match = record.jobType.match(reg);
+        if (!match) {
+          return null;
+        }
+        return {
+          ...record,
+          jobType: (
+            <span>
+              {record.jobType.split(new RegExp(`(?=${searchText})`, "i")).map((text, i) => (
+                text.toLowerCase() === searchText.toLowerCase()
+                  ? <span key={i} className="highlight">{text}</span> : text // eslint-disable-line
+              ))}
+            </span>
+          ),
+        }; 
+      }).filter(record => !!record),
+    });
+  }
+  
+  render() {
     var titleFilterList = this.createUniqueFilterList("title");
     var alphaFilterList = this.createUniqueFilterList("alpha");
     var lineOfBusinessFilterList = this.createUniqueFilterList("lineOfBusiness");
@@ -122,7 +162,7 @@ class ReportTable extends React.Component {
       { title: 'Title', dataIndex: 'title', key: 'title', 
         filters: titleFilterList,
         onFilter: (value, record) => record.title.indexOf(value) === 0,
-        sorter: (a, b) => a.title.length - b.title.length,
+        sorter: (a, b) => a.title < b.title,
         width: 120},
       { title: 'Alpha', dataIndex: 'alpha', key: 'alpha',
         filters: alphaFilterList,
@@ -143,7 +183,27 @@ class ReportTable extends React.Component {
       { title: 'Completion Date', dataIndex: 'completionDate1', key: 'completionDate1', 
         sorter: (a, b) => a.completionDate1.length - b.completionDate1.length,
         width: 120 },
-      { title: 'Jop Type', dataIndex:'jobType', key: 'jobType', width: 120},
+      { title: 'Jop Type', dataIndex:'jobType', key: 'jobType',
+        filterDropdown: (
+          <div className="filter-dropdown">
+            <Input
+              ref={ele => this.searchInput = ele}
+              placeholder="Search Job Type"
+              value={this.state.searchText}
+              onChange={this.onInputChange}
+              onPressEnter={this.onSearchJobType}
+            />
+            <Button type="primary" onClick={this.onSearchJobType}>Search</Button>
+          </div>
+        ),
+        filterIcon: <Icon type="smile-o" style={{ color: this.state.filtered ? '#108ee9' : '#aaa' }} />,
+        filterDropdownVisible: this.state.filterDropdownVisible,
+        onFilterDropdownVisibleChange: (visible) => {
+          this.setState({
+            filterDropdownVisible: visible,
+          }, () => this.searchInput && this.searchInput.focus());
+        },
+      width: 120},
       { title: 'Due Date (Actual)', dataIndex: 'dueDate', key: 'dueDate', 
         sorter: (a, b) => a.dueDate.length - b.dueDate.length,
         width: 120 },
@@ -193,7 +253,7 @@ class ReportTable extends React.Component {
         <Table 
         className="embedded-report-table"
         columns={mainCols}
-        dataSource={this.data} 
+        dataSource={this.state.data} 
         onChange={this.handleChange} 
         scroll={{x: 4200, y:1000}}
         />
